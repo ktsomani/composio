@@ -1373,6 +1373,52 @@ describe('Tools', () => {
       expect(result).toEqual(expectedProxyResponse);
     });
 
+    it('forwards HEAD and a binary upload without sending an empty binary body', async () => {
+      mockClient.tools.proxy.mockResolvedValueOnce({ data: {}, successful: true });
+
+      await context.tools.proxyExecute({
+        endpoint: '/files/report.pdf',
+        method: 'POST',
+        connectedAccountId: 'test-account-id',
+        binaryBody: {
+          url: 'https://files.example/report.pdf',
+          contentType: 'application/pdf',
+        },
+      });
+
+      expect(mockClient.tools.proxy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'POST',
+          binary_body: {
+            url: 'https://files.example/report.pdf',
+            content_type: 'application/pdf',
+          },
+        }),
+        { maxRetries: 0 }
+      );
+
+      mockClient.tools.proxy.mockClear();
+      mockClient.tools.proxy.mockResolvedValueOnce({ data: {}, successful: true });
+      await context.tools.proxyExecute({
+        endpoint: '/files/meta',
+        method: 'HEAD',
+        connectedAccountId: 'test-account-id',
+      });
+      const [headBody] = mockClient.tools.proxy.mock.calls[0] ?? [];
+      expect(headBody).toMatchObject({ method: 'HEAD', endpoint: '/files/meta' });
+      expect(headBody).not.toHaveProperty('binary_body');
+    });
+
+    it('rejects a binary upload that sets both url and base64', async () => {
+      await expect(
+        context.tools.proxyExecute({
+          endpoint: '/files/report.pdf',
+          method: 'POST',
+          binaryBody: { url: 'https://files.example/a', base64: 'YQ==' },
+        })
+      ).rejects.toThrow('Invalid tool proxy parameters');
+    });
+
     it('should forward userId as user_id', async () => {
       const expectedProxyResponse = { data: { ok: true }, status: 200 };
       mockClient.tools.proxy.mockResolvedValueOnce(expectedProxyResponse);

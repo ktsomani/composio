@@ -412,10 +412,31 @@ export const ToolExecuteResponseSchema = z.object({
 });
 export type ToolExecuteResponse = z.infer<typeof ToolExecuteResponseSchema>;
 
+export const ProxyBinaryBodySchema = z.union([
+  z
+    .object({
+      url: z.string().min(1),
+      contentType: z.string().optional(),
+    })
+    .strict(),
+  z
+    .object({
+      base64: z.string().min(1),
+      contentType: z.string().optional(),
+    })
+    .strict(),
+]);
+export type ProxyBinaryBody = z.infer<typeof ProxyBinaryBodySchema>;
+
 export const ToolProxyParamsSchema = z.object({
   endpoint: z.string(),
-  method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH']),
+  method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD']),
   body: z.unknown().optional(),
+  /**
+   * Binary upload. Set `url` or `base64`, not both. `contentType` becomes the
+   * upstream Content-Type.
+   */
+  binaryBody: ProxyBinaryBodySchema.optional(),
   parameters: z
     .array(
       z.object({

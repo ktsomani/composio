@@ -1001,6 +1001,41 @@ class TestSessionContextImpl:
         }
         assert "binary_data" not in result
 
+    def test_proxy_execute_forwards_head_and_binary_body(self):
+        mock_client = mock_http_client(MagicMock)
+        mock_client.tool_router.session.proxy_execute.return_value = (
+            SessionProxyExecuteResponse(
+                status=200, data=None, headers={}, binary_data=None
+            )
+        )
+        ctx = SessionContextImpl(client=mock_client, user_id="u", session_id="s")
+        ctx.proxy_execute(
+            toolkit="gmail",
+            endpoint="https://example.com/file",
+            method="HEAD",
+            binary_body={
+                "url": "https://files.example/a.bin",
+                "content_type": "application/octet-stream",
+            },
+        )
+        kwargs = mock_client.tool_router.session.proxy_execute.call_args.kwargs
+        assert kwargs["method"] == "HEAD"
+        assert kwargs["binary_body"] == {
+            "url": "https://files.example/a.bin",
+            "content_type": "application/octet-stream",
+        }
+
+    def test_proxy_execute_rejects_a_binary_body_with_both_sources(self):
+        mock_client = mock_http_client(MagicMock)
+        ctx = SessionContextImpl(client=mock_client, user_id="u", session_id="s")
+        with pytest.raises(ValidationError, match="exactly one of url or base64"):
+            ctx.proxy_execute(
+                toolkit="gmail",
+                endpoint="https://example.com/file",
+                method="POST",
+                binary_body={"url": "https://files.example/a.bin", "base64": "YQ=="},
+            )
+
     def test_proxy_execute_narrows_status_to_int(self):
         """The generated model types ``status`` as ``float`` and pydantic coerces.
 

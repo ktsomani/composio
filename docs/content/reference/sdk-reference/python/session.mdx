@@ -243,7 +243,7 @@ def custom_toolkits() -> List[RegisteredCustomToolkit]
 Proxy an API call through Composio's auth layer.
 
 ```python
-def proxy_execute(*, toolkit: str, endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], body: Any = ..., parameters: List[Dict[str, Any]] | None = ...) -> ToolRouterSessionProxyExecuteResponse
+def proxy_execute(*, toolkit: str, endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'], body: Any = ..., parameters: List[Dict[str, Any]] | None = ..., binary_body: Mapping[str, Any] | None = ...) -> ToolRouterSessionProxyExecuteResponse
 ```
 
 **Parameters**
@@ -252,9 +252,10 @@ def proxy_execute(*, toolkit: str, endpoint: str, method: Literal['GET', 'POST',
 |------|------|-------------|
 | `toolkit` | `str` | Composio toolkit slug (e.g. 'gmail', 'github') |
 | `endpoint` | `str` | API endpoint URL |
-| `method` | `Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH']` | HTTP method |
+| `method` | `Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD']` | HTTP method |
 | `body?` | `Any` | Request body (for POST, PUT, PATCH) |
 | `parameters?` | `List[Dict[str, Any]] \| None` | Query/header parameters |
+| `binary_body?` | `Mapping[str, Any] \| None` | Binary upload. Set `url` or `base64`, plus an optional `content_type`. |
 
 **Returns**
 

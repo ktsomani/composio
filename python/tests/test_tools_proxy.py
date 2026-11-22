@@ -20,7 +20,11 @@ def disable_telemetry():
     allow_tracking.reset(token)
 
 
-def _proxy_body(**kwargs: t.Any) -> t.Dict[str, t.Any]:
+def _proxy_body(
+    *,
+    method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"] = "GET",
+    **kwargs: t.Any,
+) -> t.Dict[str, t.Any]:
     requests: t.List[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -34,7 +38,7 @@ def _proxy_body(**kwargs: t.Any) -> t.Dict[str, t.Any]:
         http_client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
     Tools(client=client, provider=Mock()).proxy(
-        endpoint="/any", method="GET", connected_account_id="ca_123", **kwargs
+        endpoint="/any", method=method, connected_account_id="ca_123", **kwargs
     )
     assert len(requests) == 1
     return json.loads(requests[0].content)
@@ -49,3 +53,23 @@ def test_proxy_forwards_user_id() -> None:
 
 def test_proxy_omits_user_id_when_not_passed() -> None:
     assert "user_id" not in _proxy_body()
+
+
+def test_proxy_forwards_head_and_binary_body() -> None:
+    body = _proxy_body(
+        method="HEAD",
+        binary_body={
+            "base64": "YQ==",
+            "content_type": "application/pdf",
+        },
+    )
+
+    assert body["method"] == "HEAD"
+    assert body["binary_body"] == {
+        "base64": "YQ==",
+        "content_type": "application/pdf",
+    }
+
+
+def test_proxy_omits_binary_body_when_not_passed() -> None:
+    assert "binary_body" not in _proxy_body()

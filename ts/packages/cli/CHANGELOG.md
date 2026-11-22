@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `composio proxy` and `composio run`'s proxy fetch accept `HEAD`. A `Blob`, `ArrayBuffer`, or typed-array body is sent as `binary_body` instead of a text body.
+
 ## 0.6.3
 
 ### Patch Changes

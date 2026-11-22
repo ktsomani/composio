@@ -38,8 +38,43 @@ from composio.core.models.tools import (
 )
 from composio.exceptions import ValidationError
 
-_VALID_METHODS = frozenset({"GET", "POST", "PUT", "DELETE", "PATCH"})
+_VALID_METHODS = frozenset({"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"})
 _VALID_PARAM_TYPES = frozenset({"header", "query"})
+
+
+def _binary_body_param(binary_body: t.Optional[t.Mapping[str, t.Any]]) -> t.Any:
+    if binary_body is None:
+        return omit
+    if not isinstance(binary_body, dict):
+        raise ValidationError("proxy_execute: binary_body must be an object")
+    has_url = "url" in binary_body
+    has_base64 = "base64" in binary_body
+    if has_url == has_base64:
+        raise ValidationError(
+            "proxy_execute: binary_body must set exactly one of url or base64"
+        )
+    content_type = binary_body.get("content_type")
+    if content_type is not None and not isinstance(content_type, str):
+        raise ValidationError(
+            "proxy_execute: binary_body content_type must be a string"
+        )
+    if has_url:
+        url = binary_body["url"]
+        if not isinstance(url, str) or url == "":
+            raise ValidationError(
+                "proxy_execute: binary_body.url must be a non-empty string"
+            )
+        payload: t.Dict[str, str] = {"url": url}
+    else:
+        encoded = binary_body["base64"]
+        if not isinstance(encoded, str) or encoded == "":
+            raise ValidationError(
+                "proxy_execute: binary_body.base64 must be a non-empty string"
+            )
+        payload = {"base64": encoded}
+    if content_type is not None:
+        payload["content_type"] = content_type
+    return payload
 
 
 def proxy_execute_impl(
@@ -48,9 +83,10 @@ def proxy_execute_impl(
     *,
     toolkit: str,
     endpoint: str,
-    method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
+    method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"],
     body: t.Any = None,
     parameters: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
+    binary_body: t.Optional[t.Mapping[str, t.Any]] = None,
 ) -> ToolRouterSessionProxyExecuteResponse:
     """Shared proxy execute implementation used by SessionContextImpl and ToolRouterSession.
 
@@ -99,6 +135,7 @@ def proxy_execute_impl(
         method=method,
         body=body if body is not None else omit,
         parameters=api_params if api_params else omit,
+        binary_body=_binary_body_param(binary_body),
     )
 
     # A blocked request has no HTTP response, so it is read before ``status``.
@@ -215,9 +252,10 @@ class SessionContextImpl:
         *,
         toolkit: str,
         endpoint: str,
-        method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
+        method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"],
         body: t.Any = None,
         parameters: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
+        binary_body: t.Optional[t.Mapping[str, t.Any]] = None,
     ) -> ToolRouterSessionProxyExecuteResponse:
         """Proxy API calls through Composio's auth layer.
 
@@ -231,4 +269,5 @@ class SessionContextImpl:
             method=method,
             body=body,
             parameters=parameters,
+            binary_body=binary_body,
         )

@@ -43,6 +43,7 @@ describe('CLI: composio proxy', () => {
 
   it('normalizes HTTP methods', () => {
     expect(normalizeProxyMethod('post')).toBe('POST');
+    expect(normalizeProxyMethod('head')).toBe('HEAD');
   });
 
   it('parses JSON-like request bodies when possible', () => {

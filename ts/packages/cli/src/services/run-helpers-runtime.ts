@@ -103,7 +103,7 @@ const proxySchema = {
       type: 'object',
       additionalProperties: true,
       properties: {
-        method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] },
+        method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'] },
         headers: { description: 'Standard fetch headers init' },
         body: { description: 'String, JSON-ish value, Blob, ArrayBuffer, or Uint8Array' },
       },
@@ -279,16 +279,33 @@ const normalizeFetchHeaders = (headers: HeadersInit | undefined) => {
   return normalized;
 };
 
-const normalizeFetchBody = async (body: unknown) => {
+type NormalizedFetchBody =
+  | { readonly kind: 'json'; readonly value: unknown }
+  | { readonly kind: 'binary'; readonly base64: string; readonly contentType?: string };
+
+const normalizeFetchBody = async (body: unknown): Promise<NormalizedFetchBody | undefined> => {
   if (body === undefined || body === null) return undefined;
-  if (typeof body === 'string' || typeof body === 'number' || typeof body === 'boolean')
-    return body;
-  if (typeof Blob !== 'undefined' && body instanceof Blob) return await body.text();
-  if (body instanceof ArrayBuffer) return encodeBase64(new Uint8Array(body));
-  if (ArrayBuffer.isView(body)) {
-    return encodeBase64(new Uint8Array(body.buffer, body.byteOffset, body.byteLength));
+  if (typeof body === 'string' || typeof body === 'number' || typeof body === 'boolean') {
+    return { kind: 'json', value: body };
   }
-  return body;
+  if (typeof Blob !== 'undefined' && body instanceof Blob) {
+    const bytes = new Uint8Array(await body.arrayBuffer());
+    return {
+      kind: 'binary',
+      base64: encodeBase64(bytes),
+      ...(body.type.length > 0 ? { contentType: body.type } : {}),
+    };
+  }
+  if (body instanceof ArrayBuffer) {
+    return { kind: 'binary', base64: encodeBase64(new Uint8Array(body)) };
+  }
+  if (ArrayBuffer.isView(body)) {
+    return {
+      kind: 'binary',
+      base64: encodeBase64(new Uint8Array(body.buffer, body.byteOffset, body.byteLength)),
+    };
+  }
+  return { kind: 'json', value: body };
 };
 
 const normalizeFetchInput = async (input: unknown, init: RequestInit = {}) => {
@@ -302,14 +319,25 @@ const normalizeFetchInput = async (input: unknown, init: RequestInit = {}) => {
     throw new Error('proxy fetch requires a non-empty URL string or URL object.');
   }
   const method = typeof init.method === 'string' ? init.method.toUpperCase() : 'GET';
-  if (!['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
-    throw new Error('proxy fetch only supports GET, POST, PUT, DELETE, PATCH.');
+  if (!['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'].includes(method)) {
+    throw new Error('proxy fetch only supports GET, POST, PUT, DELETE, PATCH, HEAD.');
   }
+  const normalizedBody = await normalizeFetchBody(init.body);
   return {
     endpoint: endpoint.trim(),
     method,
     parameters: normalizeFetchHeaders(init.headers),
-    body: await normalizeFetchBody(init.body),
+    ...(normalizedBody?.kind === 'json' ? { body: normalizedBody.value } : {}),
+    ...(normalizedBody?.kind === 'binary'
+      ? {
+          binaryBody: {
+            base64: normalizedBody.base64,
+            ...(normalizedBody.contentType !== undefined
+              ? { contentType: normalizedBody.contentType }
+              : {}),
+          },
+        }
+      : {}),
   };
 };
 
@@ -828,6 +856,16 @@ const createProxyHelper = (params: {
           endpoint: request.endpoint,
           method: request.method,
           ...(request.body !== undefined ? { body: request.body } : {}),
+          ...(request.binaryBody !== undefined
+            ? {
+                binary_body: {
+                  base64: request.binaryBody.base64,
+                  ...(request.binaryBody.contentType !== undefined
+                    ? { content_type: request.binaryBody.contentType }
+                    : {}),
+                },
+              }
+            : {}),
           ...(request.parameters.length > 0
             ? {
                 parameters: request.parameters.map(parameter => ({

@@ -1,4 +1,5 @@
 import ComposioClient, { APIError } from '@composio/client';
+import { toWireBinaryBody } from './proxyParamsTransform';
 import { FileToolModifier } from '#file_tool_modifier';
 import { z } from 'zod/v3';
 import {
@@ -1577,10 +1578,11 @@ export class Tools<
    *
    * @param {ToolProxyParams} body - The proxy request
    * @param {string} body.endpoint - Path relative to the toolkit's base URL, or an absolute URL
-   * @param {'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'} body.method - HTTP method
+   * @param {'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD'} body.method - HTTP method
    * @param {string} [body.connectedAccountId] - The connected account to authenticate as
    * @param {string} [body.userId] - The user the connected account belongs to. Projects with 2FA enabled check it against the connected account and may require it
    * @param {unknown} [body.body] - JSON request body
+   * @param {{ url: string; contentType?: string } | { base64: string; contentType?: string }} [body.binaryBody] - Binary upload, by URL or base64. Set one of `url` or `base64`.
    * @param {Array<{ in: 'query' | 'header'; name: string; value: string | number }>} [body.parameters] - Extra query parameters or headers
    * @returns {Promise<ToolProxyResponse>} The upstream status, headers, and parsed body
    *
@@ -1626,6 +1628,9 @@ export class Tools<
       endpoint: toolProxyParams.data.endpoint,
       method: toolProxyParams.data.method,
       body: toolProxyParams.data.body,
+      ...(toolProxyParams.data.binaryBody !== undefined
+        ? { binary_body: toWireBinaryBody(toolProxyParams.data.binaryBody) }
+        : {}),
       connected_account_id: toolProxyParams.data.connectedAccountId,
       user_id: toolProxyParams.data.userId,
       parameters: parameters,

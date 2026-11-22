@@ -171,9 +171,10 @@ class SessionContext(te.Protocol):
         *,
         toolkit: str,
         endpoint: str,
-        method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
+        method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"],
         body: t.Any = None,
         parameters: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
+        binary_body: t.Optional[t.Mapping[str, t.Any]] = None,
     ) -> ToolRouterSessionProxyExecuteResponse:
         """Proxy API calls through Composio's auth layer.
 

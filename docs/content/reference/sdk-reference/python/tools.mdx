@@ -159,10 +159,10 @@ def execute(slug: str, arguments: Dict, *, connected_account_id: str | None = ..
 
 ### proxy()
 
-Proxy a tool call to the Composio API.  `user_id` is the user the connected account belongs to. Projects with 2FA enabled check it against the connected account and may require it.
+Proxy a tool call to the Composio API.  `user_id` is the user the connected account belongs to. Projects with 2FA enabled check it against the connected account and may require it.  `binary_body` is a binary upload. Set `url` or `base64`, and an optional `content_type`.
 
 ```python
-def proxy(endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'], body: object | None = ..., connected_account_id: str | None = ..., parameters: List[tool_proxy_params.Parameter] | None = ..., custom_connection_data: tool_proxy_params.CustomConnectionData | None = ..., user_id: str | None = ...) -> tool_proxy_response.ToolProxyResponse
+def proxy(endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'], body: object | None = ..., connected_account_id: str | None = ..., parameters: List[tool_proxy_params.Parameter] | None = ..., custom_connection_data: tool_proxy_params.CustomConnectionData | None = ..., user_id: str | None = ..., binary_body: tool_proxy_params.BinaryBody | None = ...) -> tool_proxy_response.ToolProxyResponse
 ```
 
 **Parameters**
@@ -176,6 +176,7 @@ def proxy(endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH'
 | `parameters?` | `List[tool_proxy_params.Parameter] \| None` |
 | `custom_connection_data?` | `tool_proxy_params.CustomConnectionData \| None` |
 | `user_id?` | `str \| None` |
+| `binary_body?` | `tool_proxy_params.BinaryBody \| None` |
 
 **Returns**
 

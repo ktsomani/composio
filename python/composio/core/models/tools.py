@@ -1006,11 +1006,15 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             tool_proxy_params.CustomConnectionData
         ] = None,
         user_id: t.Optional[str] = None,
+        binary_body: t.Optional[tool_proxy_params.BinaryBody] = None,
     ) -> tool_proxy_response.ToolProxyResponse:
         """Proxy a tool call to the Composio API.
 
         ``user_id`` is the user the connected account belongs to. Projects with
         2FA enabled check it against the connected account and may require it.
+
+        ``binary_body`` is a binary upload. Set ``url`` or ``base64``, and an
+        optional ``content_type``.
         """
         # Disable retries: a proxied call is a non-idempotent write, and a silent
         # retry after a read timeout can duplicate the side effect.
@@ -1026,6 +1030,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             if custom_connection_data is not None
             else omit,
             user_id=user_id if user_id is not None else omit,
+            binary_body=binary_body if binary_body is not None else omit,
         )
 
 

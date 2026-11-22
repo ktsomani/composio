@@ -22,7 +22,7 @@ const account = Flag.String('account').pipe(
 const method = Flag.String('method').pipe(
   Flag.withAlias('X'),
   Flag.withDefault('GET'),
-  Flag.withDescription('HTTP method, curl-style (GET, POST, PUT, DELETE, PATCH)')
+  Flag.withDescription('HTTP method, curl-style (GET, POST, PUT, DELETE, PATCH, HEAD)')
 );
 
 const headers = Flag.String('header').pipe(

@@ -20,6 +20,7 @@ import type {
   RegisteredLocalToolkit,
 } from './customTool.types';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
+import { ProxyBinaryBodySchema } from './tool.types';
 import { addSessionConfigConflictIssue } from '../lib/sessionConfigConflict';
 
 export const SessionPreset = {
@@ -1065,9 +1066,11 @@ export const SessionProxyExecuteParamsSchema = z.object({
   /** The API endpoint URL to call */
   endpoint: z.string(),
   /** HTTP method */
-  method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH']),
+  method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD']),
   /** Request body (for POST/PUT/PATCH) */
   body: z.unknown().optional(),
+  /** Binary upload. Set `url` or `base64`, not both. */
+  binaryBody: ProxyBinaryBodySchema.optional(),
   /** Query params or headers to include */
   parameters: z
     .array(
