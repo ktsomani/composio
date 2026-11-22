@@ -398,9 +398,12 @@ describe('fileUtils', () => {
       // actual on-disk path goes through `path.basename`. We assert that
       // the on-disk path stays under the download dir by checking the
       // returned filePath.
-      expect(result.filePath).toBeDefined();
-      expect(path.dirname(result.filePath as string)).not.toContain('etc');
-      expect(path.basename(result.filePath as string)).toBe('passwd_1640995200000abc12345.txt');
+      expect(result.filePath).toEqual(expect.any(String));
+      if (result.filePath === null) {
+        throw new Error('expected the download to be saved');
+      }
+      expect(path.dirname(result.filePath)).not.toContain('etc');
+      expect(path.basename(result.filePath)).toBe('passwd_1640995200000abc12345.txt');
     });
 
     it('rejects a stream that exceeds the download limit and writes nothing', async () => {
@@ -432,8 +435,24 @@ describe('fileUtils', () => {
         maxDownloadBytes: 1024,
       });
 
-      expect(result.filePath).toBeDefined();
+      expect(result.filePath).toEqual(expect.any(String));
       expect(fs.writeFileSync).toHaveBeenCalledWith(result.filePath, body);
+    });
+
+    it('returns a null filePath when saving the download throws', async () => {
+      mockFetch.mockResolvedValue(downloadedFileResponse());
+      vi.mocked(fs.writeFileSync).mockImplementationOnce(() => {
+        throw new Error('disk full');
+      });
+
+      const result = await downloadFileFromS3({
+        toolSlug: 'github',
+        s3Url: 'https://s3.example.com/file.bin',
+        mimeType: 'text/plain',
+      });
+
+      expect(result.filePath).toBeNull();
+      expect(result.name).toBe('github_1640995200000abc12345.txt');
     });
   });
 
