@@ -48,7 +48,14 @@ For any other MCP-capable client, configure HTTP transport with the endpoint and
 Install and authenticate the CLI only when the task needs it:
 
 ```bash
-curl -fsSL https://composio.dev/install | bash
+# macOS and Linux. On Windows, Git Bash is not the installer; use the PowerShell command below.
+curl -fsSL https://composio.dev/install | sh
+composio login
+```
+
+```powershell
+# Windows x64 (experimental). See INSTALL.md.
+irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex
 composio login
 ```
 

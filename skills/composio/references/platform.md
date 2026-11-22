@@ -47,14 +47,22 @@ If the dashboard handoff is missing or masked, direct the developer back to Plat
 If there is no existing project credential and no dashboard handoff, use the current first-time setup path:
 
 ```bash
-curl -fsSL https://composio.dev/install | bash
+# macOS and Linux. On Windows, Git Bash is not the installer; use the PowerShell command below.
+curl -fsSL https://composio.dev/install | sh
+composio login
+composio dev init
+```
+
+```powershell
+# Windows x64 (experimental). See INSTALL.md.
+irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex
 composio login
 composio dev init
 ```
 
 `composio dev init` writes `COMPOSIO_API_KEY` and `COMPOSIO_TEST_USER_ID` to `.env.local`. Python dotenv does not load `.env.local` by default, so pass the path explicitly or move the variables through the project's normal secret mechanism. There is no bare `composio init` command.
 
-Verification stamp: these commands were exercised against CLI 0.2.32 and 0.3.1 on 2026-08-06. If the installed version differs or behavior conflicts, check `composio dev --help` and current docs rather than forcing the stamped behavior.
+Verification stamp: `composio login` and `composio dev init` were exercised against CLI 0.2.32 and 0.3.1 on 2026-08-06. The Windows installer was not part of that run. If the installed version differs or behavior conflicts, check `composio dev --help` and current docs rather than forcing the stamped behavior.
 
 ### Install the SDK the codebase needs
 

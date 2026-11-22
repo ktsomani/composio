@@ -102,10 +102,16 @@ By default a session gets meta tools that discover, authenticate, and execute ap
 The `composio` CLI runs Composio from your shell and gives coding agents like Claude Code a local tool surface.
 
 ```bash
+# macOS and Linux
 curl -fsSL https://composio.dev/install | sh
 ```
 
-The installer puts `composio` on your `PATH` for future terminals. Open a new terminal, then run `composio login`. See [INSTALL.md](INSTALL.md) for shell setup overrides, including `COMPOSIO_INSTALL_SHELL=none` for install-only runs.
+```powershell
+# Windows x64 (experimental)
+irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex
+```
+
+The installer puts `composio` on your `PATH` for future terminals. Open a new terminal, then run `composio login`. See [INSTALL.md](INSTALL.md) for shell setup overrides, including `COMPOSIO_INSTALL_SHELL=none` for install-only runs. Windows support is experimental.
 
 Use `composio search` to find tools, `composio execute` to run them, `composio link` to connect accounts, and `composio run` to script workflows in TypeScript. See the [CLI docs](https://docs.composio.dev/docs/cli).
 
