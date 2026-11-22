@@ -1171,6 +1171,105 @@ describe('ConnectedAccounts', () => {
         connectedAccounts.update('conn_abc123', { enabled: 'yes' } as unknown)
       ).rejects.toThrow('Failed to parse connected account update params');
     });
+
+    it('sets an alias through the connected-account patch endpoint', async () => {
+      extendedMockClient.connectedAccounts.patch.mockResolvedValueOnce({
+        success: true,
+        id: 'conn_abc123',
+        status: 'ACTIVE',
+      });
+
+      const result = await connectedAccounts.update('conn_abc123', { alias: 'work-gmail' });
+
+      expect(extendedMockClient.connectedAccounts.patch).toHaveBeenCalledWith(
+        'conn_abc123',
+        { alias: 'work-gmail' },
+        undefined
+      );
+      expect(extendedMockClient.connectedAccounts.updateStatus).not.toHaveBeenCalled();
+      expect(result).toEqual({ success: true, id: 'conn_abc123', status: 'ACTIVE' });
+    });
+
+    it('clears an alias when the caller passes an empty string', async () => {
+      extendedMockClient.connectedAccounts.patch.mockResolvedValueOnce({
+        success: true,
+        id: 'conn_abc123',
+        status: 'ACTIVE',
+      });
+
+      await connectedAccounts.update('conn_abc123', { alias: '' });
+
+      expect(extendedMockClient.connectedAccounts.patch).toHaveBeenCalledWith(
+        'conn_abc123',
+        { alias: '' },
+        undefined
+      );
+    });
+
+    it('replaces bearer-token credentials through the patch endpoint', async () => {
+      extendedMockClient.connectedAccounts.patch.mockResolvedValueOnce({
+        success: true,
+        id: 'conn_abc123',
+        status: 'ACTIVE',
+      });
+
+      await connectedAccounts.update('conn_abc123', {
+        connection: {
+          state: { authScheme: 'BEARER_TOKEN', val: { token: 'new-access-token' } },
+        },
+      });
+
+      expect(extendedMockClient.connectedAccounts.patch).toHaveBeenCalledWith(
+        'conn_abc123',
+        {
+          connection: {
+            state: { authScheme: 'BEARER_TOKEN', val: { token: 'new-access-token' } },
+          },
+        },
+        undefined
+      );
+      expect(extendedMockClient.connectedAccounts.updateStatus).not.toHaveBeenCalled();
+    });
+
+    it('sends alias and credentials in one patch', async () => {
+      extendedMockClient.connectedAccounts.patch.mockResolvedValueOnce({
+        success: true,
+        id: 'conn_abc123',
+        status: 'ACTIVE',
+      });
+
+      await connectedAccounts.update('conn_abc123', {
+        alias: 'work',
+        connection: {
+          state: { authScheme: 'API_KEY', val: { generic_api_key: 'new-api-key' } },
+        },
+      });
+
+      expect(extendedMockClient.connectedAccounts.patch).toHaveBeenCalledWith(
+        'conn_abc123',
+        {
+          alias: 'work',
+          connection: {
+            state: { authScheme: 'API_KEY', val: { generic_api_key: 'new-api-key' } },
+          },
+        },
+        undefined
+      );
+    });
+
+    it('rejects an update that sets enabled together with an alias', async () => {
+      await expect(
+        connectedAccounts.update('conn_abc123', { enabled: false, alias: 'work-gmail' })
+      ).rejects.toThrow('Failed to parse connected account update params');
+      expect(extendedMockClient.connectedAccounts.patch).not.toHaveBeenCalled();
+      expect(extendedMockClient.connectedAccounts.updateStatus).not.toHaveBeenCalled();
+    });
+
+    it('rejects an update that changes nothing', async () => {
+      await expect(connectedAccounts.update('conn_abc123', {})).rejects.toThrow(
+        'Failed to parse connected account update params'
+      );
+    });
   });
 
   describe('link', () => {

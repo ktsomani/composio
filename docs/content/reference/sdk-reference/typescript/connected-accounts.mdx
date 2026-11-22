@@ -425,12 +425,18 @@ console.log(result.revokedTokens); // e.g. ['access_token', 'refresh_token']
 
 ### update()
 
-Enable or disable a connected account. Accepts `{ enabled: boolean }`.
+Update a connected account's alias, credentials, or enabled state.
+
+`alias` and `connection` go to `PATCH /api/v3.1/connected_accounts/{id}`.
+Pass `alias: ''` to clear the alias. `connection.state.val` replaces only
+the credential fields you set, and `null` clears a field. `enabled` keeps
+the previous status-endpoint behavior. Combine `alias` and `connection` in
+one call. Do not combine either of them with `enabled`.
 
 Use `updateAcl()` for ACL writes on SHARED connections.
 
 ```typescript
-async update(nanoid: string, params: UpdateConnectedAccountParams, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountUpdateStatusResponse>
+async update(nanoid: string, params: UpdateConnectedAccountParams, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountUpdateStatusResponse | ConnectedAccountPatchResponse>
 ```
 
 **Parameters**
@@ -438,17 +444,26 @@ async update(nanoid: string, params: UpdateConnectedAccountParams, requestOption
 | Name | Type | Description |
 |------|------|-------------|
 | `nanoid` | `string` | The unique identifier of the connected account |
-| `params` | `UpdateConnectedAccountParams` | The update parameters |
+| `params` | `UpdateConnectedAccountParams` | Alias, credential, or enabled-state update |
 | `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<ConnectedAccountUpdateStatusResponse>` — The update response
+`Promise<ConnectedAccountUpdateStatusResponse | ConnectedAccountPatchResponse>` — The patch response, or the status response when `enabled` is set
 
 **Example**
 
 ```typescript
-// Disable an account
+await composio.connectedAccounts.update('ca_abc123', { alias: 'work-gmail' });
+
+await composio.connectedAccounts.update('ca_abc123', { alias: '' });
+
+await composio.connectedAccounts.update('ca_abc123', {
+  connection: {
+    state: { authScheme: 'BEARER_TOKEN', val: { token: 'new-access-token' } },
+  },
+});
+
 await composio.connectedAccounts.update('ca_abc123', { enabled: false });
 ```
 

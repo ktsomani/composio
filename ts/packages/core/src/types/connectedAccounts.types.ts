@@ -364,12 +364,76 @@ export const ConnectedAccountRefreshOptionsSchema = z.object({
 });
 export type ConnectedAccountRefreshOptions = z.infer<typeof ConnectedAccountRefreshOptionsSchema>;
 
-// Use the Stainless-generated type as the source of truth for update params.
-export type { ConnectedAccountUpdateStatusParams as UpdateConnectedAccountParams } from '@composio/client/resources/connected-accounts';
+/**
+ * Credential fields `update()` can replace. Matches the connected-account
+ * PATCH body: omitted fields stay, and `null` clears a field.
+ */
+const UpdateConnectedAccountCredentialValSchema = z
+  .object({
+    token: z.string().nullable().optional(),
+    generic_api_key: z.string().nullable().optional(),
+    api_key: z.string().nullable().optional(),
+    bearer_token: z.string().nullable().optional(),
+    basic_encoded: z.string().nullable().optional(),
+    generic_token: z.string().nullable().optional(),
+    api_key_prefix: z.string().nullable().optional(),
+    generic_secret: z.string().nullable().optional(),
+    generic_id: z.string().nullable().optional(),
+    user_agent: z.string().nullable().optional(),
+    username: z.string().nullable().optional(),
+    password: z.string().nullable().optional(),
+    credentials_json: z.string().nullable().optional(),
+    application_id: z.string().nullable().optional(),
+    installation_id: z.string().nullable().optional(),
+    private_key: z.string().nullable().optional(),
+  })
+  .strict();
 
-export const UpdateConnectedAccountParamsSchema = z.object({
-  enabled: z.boolean(),
-});
+const UpdateConnectedAccountAuthSchemeSchema = z.enum([
+  'BEARER_TOKEN',
+  'API_KEY',
+  'BASIC',
+  'BASIC_WITH_JWT',
+  'GOOGLE_SERVICE_ACCOUNT',
+  'SERVICE_ACCOUNT',
+]);
+
+/**
+ * Params for `composio.connectedAccounts.update()`.
+ *
+ * `alias` and `connection` are sent to `PATCH /api/v3.1/connected_accounts/{id}`.
+ * `enabled` stays on the status endpoint, so existing `{ enabled }` calls keep
+ * working. Pass an empty `alias` to clear it. `enabled` cannot be combined
+ * with `alias` or `connection`, because those are different requests.
+ */
+export const UpdateConnectedAccountParamsSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    /** Human-readable alias. Pass `''` to clear it. */
+    alias: z.string().optional(),
+    connection: z
+      .object({
+        state: z.object({
+          authScheme: UpdateConnectedAccountAuthSchemeSchema,
+          val: UpdateConnectedAccountCredentialValSchema,
+        }),
+      })
+      .optional(),
+  })
+  .refine(
+    params =>
+      params.enabled !== undefined || params.alias !== undefined || params.connection !== undefined,
+    { message: 'At least one of enabled, alias, or connection is required' }
+  )
+  .refine(
+    params =>
+      params.enabled === undefined || (params.alias === undefined && params.connection === undefined),
+    {
+      message:
+        'enabled is updated on the status endpoint and cannot be combined with alias or connection',
+    }
+  );
+export type UpdateConnectedAccountParams = z.infer<typeof UpdateConnectedAccountParamsSchema>;
 
 /**
  * Params for `composio.connectedAccounts.updateAcl()`. Mirrors the inner
